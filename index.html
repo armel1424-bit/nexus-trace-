@@ -1,0 +1,1220 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NEXUS TRACE — Voir ce qui se passe réellement derrière une connexion</title>
+<meta name="description" content="NEXUS TRACE : 8 scénarios, 8 décisions. Un parcours interactif pour comprendre le trajet d’une requête, du DNS au déploiement. Tout est simulé dans le navigateur.">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-De6GmNInPNVhAc2bm/b9yieEwmNK5nKGpoX1jXXWnLw='; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="theme-color" content="#0A1229">
+<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+PHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iOCIgZmlsbD0iIzI0NkJGRCIvPjxjaXJjbGUgY3g9IjkiIGN5PSIyMyIgcj0iMyIgZmlsbD0iI2ZmZiIvPjxjaXJjbGUgY3g9IjIzIiBjeT0iOSIgcj0iMyIgZmlsbD0iI2ZmZiIvPjxwYXRoIGQ9Ik0xMSAyMSAyMSAxMSIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjIuMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+PHBhdGggZD0iTTkgOWg0TTE5IDIzaDQiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLW9wYWNpdHk9Ii41NSIgc3Ryb2tlLXdpZHRoPSIyLjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPjwvc3ZnPgo=" type="image/svg+xml">
+<style>
+/* NEXUS TRACE — parcours de décisions. Zones sombres immersives, zones claires pédagogiques. */
+:root {
+  --blue: #246BFD;
+  --blue-d: #1B54CC;
+  --night: #0A1229;
+  --night-2: #111B3C;
+  --night-3: #1A2750;
+  --line: #2A3A6E;
+  --ink: #0F172A;
+  --ink-2: #475569;
+  --bg: #F3F6FC;
+  --card: #FFFFFF;
+  --rule: #DCE3F1;
+  --good: #0F7B4A;
+  --good-bg: #E6F5EC;
+  --bad: #B42318;
+  --bad-bg: #FDECEA;
+  --part: #9A5B00;
+  --part-bg: #FFF4DC;
+  --on-night: #E8EEFF;
+  --on-night-2: #A9B7DC;
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; font-family: var(--font); color: var(--ink); background: var(--bg); line-height: 1.55; font-size: 16px; }
+button { font: inherit; color: inherit; cursor: pointer; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.skip { position: absolute; left: -999px; top: 0; background: var(--blue); color: #fff; padding: 8px 12px; z-index: 50; }
+.skip:focus { left: 8px; top: 8px; }
+:focus-visible { outline: 3px solid #7FA8FF; outline-offset: 2px; }
+.ico { width: 18px; height: 18px; vertical-align: -3px; }
+
+/* ----- en-tête ----- */
+.site-head { background: var(--night); color: var(--on-night); position: sticky; top: 0; z-index: 20; border-bottom: 1px solid var(--line); }
+.head-in { max-width: 760px; margin: 0 auto; padding: 10px 16px; display: flex; align-items: center; gap: 14px; justify-content: space-between; }
+.brand { display: flex; align-items: center; gap: 9px; color: #fff; text-decoration: none; font-weight: 700; letter-spacing: .08em; font-size: 15px; }
+.brand i { width: 12px; height: 12px; border-radius: 50%; background: var(--blue); box-shadow: 0 0 0 4px rgba(36,107,253,.25); }
+#progress { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; font-size: 13px; color: var(--on-night-2); min-width: 0; }
+#progress strong { color: #fff; }
+.pg-bar { display: block; width: 130px; max-width: 100%; height: 6px; background: var(--night-3); border-radius: 4px; overflow: hidden; }
+.pg-bar span { display: block; height: 100%; background: var(--blue); transition: width .4s; }
+
+main { max-width: 760px; margin: 0 auto; padding-bottom: 48px; }
+.eyebrow { margin: 0 0 6px; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: #8FB0FF; font-weight: 600; }
+.note { font-size: 13px; color: var(--ink-2); }
+
+/* ----- accueil ----- */
+.hero { background: linear-gradient(180deg, var(--night) 0%, var(--night-2) 100%); color: var(--on-night); padding: 36px 20px 32px; }
+.hero h1 { margin: 0; font-size: clamp(34px, 9vw, 52px); letter-spacing: .04em; line-height: 1.05; color: #fff; }
+.tagline { margin: 10px 0 0; color: var(--on-night-2); font-size: 16px; }
+.hook { margin: 26px 0 8px; font-size: clamp(21px, 5.6vw, 28px); font-weight: 650; color: #fff; line-height: 1.25; }
+.lead { margin: 0 0 20px; color: var(--on-night); }
+.hero-pg { display: inline-block; padding: 8px 14px; border: 1px solid var(--line); border-radius: 999px; background: rgba(255,255,255,.04); margin-bottom: 18px; font-size: 14px; }
+.notice { background: rgba(36,107,253,.18); border: 1px solid var(--blue); padding: 10px 14px; border-radius: 10px; margin: 0 0 16px; }
+.free-badge { color: #7BE0A8; margin: 0 0 14px; }
+.how, .list { padding: 24px 20px 4px; }
+.how h2, .list h2 { margin: 0 0 12px; font-size: 18px; }
+.how-list { margin: 0 0 8px; padding-left: 20px; display: grid; gap: 6px; }
+.cards { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.scard { width: 100%; display: flex; align-items: center; gap: 14px; text-align: left; background: var(--card); border: 1px solid var(--rule); border-radius: 14px; padding: 14px 16px; min-height: 64px; }
+.scard:hover:not(.locked) { border-color: var(--blue); }
+.s-n { flex: 0 0 38px; height: 38px; border-radius: 50%; background: var(--night); color: #fff; display: grid; place-items: center; font-weight: 700; }
+.s-t { flex: 1; display: grid; }
+.s-t small { color: var(--ink-2); }
+.s-i { color: var(--blue); font-size: 22px; }
+.scard.done .s-n { background: var(--good); }
+.scard.locked { opacity: .55; }
+.scard.locked .s-n { background: #64748B; }
+
+/* ----- boutons ----- */
+.btn { border: 1px solid var(--rule); background: var(--card); border-radius: 10px; padding: 10px 16px; min-height: 44px; font-weight: 600; }
+.btn.primary { background: var(--blue); color: #fff; border-color: var(--blue); }
+.btn.primary:hover:not(:disabled) { background: var(--blue-d); }
+.btn.primary:disabled { opacity: .45; cursor: not-allowed; }
+.btn.big { width: 100%; padding: 14px 18px; font-size: 17px; }
+.btn.ghost { background: transparent; }
+.btn.danger { background: var(--bad); color: #fff; border-color: var(--bad); }
+.btn.mini { min-height: 38px; padding: 6px 12px; font-size: 14px; background: var(--night-3); color: var(--on-night); border-color: var(--line); }
+
+/* ----- barre de scénarios ----- */
+.topbar { background: var(--night); padding: 10px 16px 12px; display: flex; flex-direction: column; gap: 8px; }
+.back { align-self: flex-start; background: none; border: 0; color: var(--on-night-2); padding: 6px 0; min-height: 36px; }
+.chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
+.chip { flex: 0 0 auto; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: var(--night-2); color: var(--on-night); font-weight: 700; display: grid; place-items: center; }
+.chip.on { background: var(--blue); border-color: var(--blue); color: #fff; }
+.chip.done { border-color: #2f9e6a; color: #7BE0A8; }
+.chip.locked { opacity: .5; color: var(--on-night-2); }
+
+/* ----- carte de scénario ----- */
+.sc-card { background: var(--night); color: var(--on-night); padding: 6px 20px 20px; }
+.sc-title { margin: 0; font-size: clamp(26px, 7vw, 36px); line-height: 1.15; color: #fff; }
+.sc-title:focus { outline: none; }
+.sc-goal { margin: 8px 0 14px; color: var(--on-night-2); }
+.loop { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.loop li { font-size: 11px; letter-spacing: .08em; padding: 4px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--on-night-2); }
+.loop li.past { color: #fff; border-color: #3C5AA8; background: rgba(36,107,253,.2); }
+.loop li.now { background: var(--blue); border-color: var(--blue); color: #fff; font-weight: 700; }
+
+/* ----- visualisation ----- */
+.viz { background: var(--night-2); color: var(--on-night); padding: 0 20px 22px; border-top: 1px solid var(--line); }
+.tabs { display: flex; gap: 4px; padding-top: 14px; }
+.tabs button { flex: 1; min-height: 42px; border: 1px solid var(--line); background: transparent; color: var(--on-night-2); letter-spacing: .08em; font-weight: 650; font-size: 13px; border-radius: 10px; }
+.tabs button.on { background: var(--blue); border-color: var(--blue); color: #fff; }
+.viz-q { margin: 14px 0 10px; color: var(--on-night-2); font-size: 14px; }
+.scene .vlink { text-align: center; color: #5C7BCB; line-height: 1; margin: 4px 0; font-size: 18px; }
+.blk { margin: 0; }
+.blk-t { font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: #8FB0FF; margin-bottom: 6px; }
+.blk-note { text-transform: none; letter-spacing: 0; color: var(--on-night-2); }
+.nodes { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.nodes.group { align-items: stretch; }
+.node { position: relative; background: var(--night-3); border: 1.5px solid #3C5AA8; border-radius: 12px; padding: 9px 12px; min-width: 84px; display: grid; gap: 2px; flex: 0 1 auto; }
+.nodes.group .node { flex: 1 1 110px; }
+.n-l { font-weight: 650; font-size: 15px; color: #fff; padding-right: 14px; }
+.n-s { font-size: 12.5px; color: var(--on-night-2); line-height: 1.3; }
+.n-m { position: absolute; top: 5px; right: 8px; font-weight: 800; font-size: 14px; }
+.node.st-down { border-color: #FF8A80; border-style: dashed; } .node.st-down .n-m { color: #FF8A80; }
+.node.st-warn { border-color: #FFC857; } .node.st-warn .n-m { color: #FFC857; }
+.node.st-new { border-color: #5FA2FF; background: #16336F; } .node.st-new .n-m { color: #8FC0FF; }
+.arr { color: #7FA0F0; font-size: 18px; }
+.arr.cut { color: #FF8A80; font-weight: 800; }
+.scene.compact .node { padding: 7px 10px; }
+.scene.compact .n-l { font-size: 14px; }
+
+.trace { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.tstep { display: flex; gap: 12px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--night-3); }
+.tstep.on { border-color: var(--blue); box-shadow: 0 0 0 2px rgba(36,107,253,.35); background: #16336F; }
+.t-n { flex: 0 0 26px; height: 26px; border-radius: 50%; background: var(--night); display: grid; place-items: center; font-size: 13px; font-weight: 700; color: #fff; }
+.tstep.on .t-n { background: var(--blue); }
+.t-b { flex: 1; min-width: 0; }
+.t-h { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; color: #fff; }
+.t-k { font-size: 11px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--on-night-2); }
+.t-d { font-size: 14px; color: var(--on-night-2); margin-top: 2px; }
+.t-bar { margin-top: 7px; display: flex; align-items: center; gap: 8px; }
+.t-bar span { display: block; height: 8px; background: var(--blue); border-radius: 4px; flex: 0 1 auto; min-width: 4px; }
+.t-bar em { font-style: normal; font-size: 13px; color: #fff; white-space: nowrap; }
+.t-total { margin: 12px 0 0; font-size: 14px; color: var(--on-night); }
+.t-total span { color: var(--on-night-2); font-size: 12.5px; }
+.stepper { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; color: var(--on-night-2); font-size: 14px; }
+
+/* panneau « conséquence » (zone claire) : on réutilise les composants sombres dans une carte sombre */
+.cons .scene, .cons .trace { background: var(--night-2); padding: 12px; border-radius: 14px; }
+.cons .tstep { background: var(--night-3); }
+
+/* ----- zone question ----- */
+.qzone { padding: 22px 20px 0; }
+.qcount { margin: 0 0 12px; font-size: 13px; color: var(--ink-2); letter-spacing: .04em; text-transform: uppercase; font-weight: 600; }
+.block { margin-bottom: 16px; }
+.lab { display: inline-block; font-size: 11.5px; letter-spacing: .12em; font-weight: 700; color: var(--blue); margin-bottom: 4px; }
+.situation { margin: 0; font-size: 17px; }
+.ask { margin: 0; font-size: clamp(20px, 5.4vw, 24px); line-height: 1.25; }
+.hint { margin: 4px 0 0; color: var(--ink-2); font-size: 14px; }
+.choices { display: grid; gap: 10px; margin-bottom: 14px; }
+.choice { display: flex; align-items: flex-start; gap: 12px; text-align: left; width: 100%; background: var(--card); border: 1.5px solid var(--rule); border-radius: 14px; padding: 14px; min-height: 56px; position: relative; }
+.choice:hover:not(:disabled) { border-color: var(--blue); }
+.choice.sel { border-color: var(--blue); background: #EAF1FF; }
+.c-l { flex: 0 0 28px; height: 28px; border-radius: 8px; background: var(--night); color: #fff; display: grid; place-items: center; font-weight: 700; font-size: 14px; }
+[role="checkbox"] .c-l { background: transparent; border: 2px solid #94A3B8; border-radius: 6px; }
+.choice.sel .c-l { border-color: var(--blue); background: var(--blue); }
+.choice.sel[role="checkbox"] .c-l::after { content: "✓"; color: #fff; font-weight: 800; }
+.c-t { flex: 1; }
+.c-r { font-weight: 800; }
+.choice.action { background: var(--blue); color: #fff; border-color: var(--blue); font-weight: 650; }
+.choice.action .c-l { display: none; }
+.choice:disabled { cursor: default; }
+.choice.is-good { background: var(--good-bg); border-color: var(--good); }
+.choice.is-bad { background: var(--bad-bg); border-color: var(--bad); }
+.choice.is-part { background: var(--part-bg); border-color: var(--part); }
+.choice.is-good .c-r { color: var(--good); } .choice.is-bad .c-r { color: var(--bad); }
+.choice.action.is-good { background: var(--good-bg); color: var(--ink); }
+#validate { width: 100%; }
+
+/* ----- panneau POURQUOI ----- */
+.why { background: var(--card); border: 1.5px solid var(--rule); border-left-width: 6px; border-radius: 14px; padding: 16px; margin: 18px 0 14px; }
+.why:focus { outline: none; }
+.why.good { border-left-color: var(--good); } .why.bad { border-left-color: var(--bad); } .why.part { border-left-color: var(--part); }
+.why h3 { margin: 0 0 6px; font-size: 14px; letter-spacing: .14em; color: var(--blue); }
+.verdict { display: inline-block; margin: 0 0 12px; padding: 4px 12px; border-radius: 999px; font-weight: 700; font-size: 14px; }
+.v-good { background: var(--good-bg); color: var(--good); } .v-bad { background: var(--bad-bg); color: var(--bad); } .v-part { background: var(--part-bg); color: var(--part); }
+.w-sec { margin: 0 0 12px; }
+.w-sec p { margin: 2px 0 0; }
+.why-list { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 8px; }
+.why-list li { display: flex; gap: 10px; padding: 8px 10px; border-radius: 10px; font-size: 15px; }
+.why-list .ok { background: var(--good-bg); } .why-list .ko { background: var(--bad-bg); }
+.why-list .v { font-weight: 700; }
+.cons { margin-top: 4px; }
+.cons-t { margin: 10px 0 0; font-weight: 500; }
+.done-card, .retry-card { margin: 12px 0; padding: 12px 14px; border-radius: 12px; }
+.done-card { background: var(--good-bg); color: #0b5c37; }
+.retry-card { background: var(--part-bg); color: var(--part); }
+
+.foot { padding: 28px 20px 0; text-align: center; }
+.warn-t { font-weight: 600; }
+
+@media (min-width: 720px) {
+  main { padding-bottom: 72px; }
+  .hero, .sc-card, .viz, .qzone, .how, .list, .topbar { border-radius: 0; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
+
+</style>
+</head>
+<body>
+<a class="skip" href="#app">Aller au contenu</a>
+<header class="site-head">
+  <div class="head-in">
+    <a class="brand" id="brand" href="./"><i aria-hidden="true"></i>NEXUS TRACE</a>
+    <div id="progress" aria-live="polite"></div>
+  </div>
+</header>
+<main id="app"></main>
+<noscript><p style="padding:20px">NEXUS TRACE a besoin de JavaScript pour fonctionner. Rien n’est envoyé nulle part : tout se passe dans ton navigateur.</p></noscript>
+<script>
+/* NEXUS TRACE — noyau des données du parcours (utilisable aussi sous Node pour les tests) */
+(function () {
+  var root = typeof window !== 'undefined' ? window : globalThis;
+  var NQ = root.NQ = root.NQ || {};
+  NQ.scenarios = [];
+
+  /* Nœud : id, étiquette, sous-titre, état (ok | warn | down | new | hot) */
+  NQ.n = function (id, l, s, st) { return { id: id, l: l, s: s || '', st: st || 'ok' }; };
+  /* Bloc de scène : mode 'chain' (nœuds reliés par des flèches) ou 'group' (nœuds en parallèle) */
+  NQ.b = function (t, mode, nodes, o) { return Object.assign({ t: t, mode: mode, nodes: nodes }, o || {}); };
+  /* Étape de trace : titre, détail, durée en ms (optionnelle), kind (reseau | serveur | client) */
+  NQ.s = function (t, d, ms, kind) { return { t: t, d: d, ms: ms === undefined ? null : ms, kind: kind || '' }; };
+
+  NQ.LOOP = ['OBSERVE', 'TRACE', 'COMPRENDS', 'MODIFIE', 'TESTE', 'EXPLIQUE'];
+  NQ.STORE_KEY = 'nt.quiz.v1';
+})();
+
+/* NEXUS TRACE — scénarios 1 à 4 : situation, décision, explication, conséquence */
+(function () {
+  var NQ = (typeof window !== 'undefined' ? window : globalThis).NQ;
+  var n = NQ.n, b = NQ.b, s = NQ.s;
+
+  /* ================= 1. OUVRIR UNE PAGE (chapitre 7) ================= */
+  var S1_SCENE = [
+    b('Ton appareil', 'chain', [n('u', 'Toi'), n('nav', 'Navigateur')]),
+    b('Annuaire', 'group', [n('dns', 'DNS', 'nom → adresse')]),
+    b('Le voyage', 'chain', [n('net', 'Internet', 'routeurs'), n('srv', 'Serveur web', '203.0.113.7')]),
+    b('Derrière le serveur', 'chain', [n('app', 'NEXUS DEMO', 'application'), n('db', 'Base de données', 'compteur')])
+  ];
+  var S1_TRACE = [
+    s('Tu tapes nexus-demo.example', 'Le navigateur reçoit un nom, pas une adresse.', 0, 'client'),
+    s('Le DNS donne l’adresse', 'Question puis réponse : 203.0.113.7.', 30, 'reseau'),
+    s('La connexion s’établit', 'Poignée de main TCP : un aller-retour avant toute demande.', 40, 'reseau'),
+    s('La demande part', 'GET /accueil, en HTTP.', 20, 'reseau'),
+    s('Le serveur travaille', 'L’application lit le compteur dans la base et construit la page.', 60, 'serveur'),
+    s('La réponse revient', 'La page repart en paquets.', 20, 'reseau'),
+    s('Le navigateur affiche', 'Il assemble les morceaux et dessine la page.', 50, 'client')
+  ];
+  var S1_TRACE_BACK = [
+    s('Tu tapes nexus-demo.example', 'Même nom, même site.', 0, 'client'),
+    s('Adresse déjà en mémoire', 'Le cache DNS répond sans interroger l’annuaire.', 1, 'reseau'),
+    s('Connexion réutilisée', 'Pas de nouvelle poignée de main complète.', 5, 'reseau'),
+    s('La demande part', 'GET /accueil.', 20, 'reseau'),
+    s('Le serveur travaille', 'Toujours le même travail : construire la page.', 60, 'serveur'),
+    s('La réponse revient', 'La page repart en paquets.', 20, 'reseau'),
+    s('Le navigateur affiche', 'Styles et images déjà gardés : affichage plus court.', 20, 'client')
+  ];
+
+  NQ.scenarios.push({
+    id: 1, chapter: 7, title: 'Ouvrir une page',
+    goal: 'Comprendre le trajet général d’une requête : de l’adresse tapée à la page affichée.',
+    scene: S1_SCENE, trace: S1_TRACE,
+    questions: [
+      {
+        kind: 'single',
+        situation: 'Tu ouvres **nexus-demo.example**. La page s’affiche en un clin d’œil, mais derrière, la requête a traversé sept étapes. Observe la trace : le total fait **220 ms**.',
+        ask: 'Où le temps se perd-il principalement ?',
+        principle: 'Une visite est une conversation ordonnée. Chaque étape a un coût, et la seconde que tu ressens est une pile d’attentes courtes.',
+        others: 'Chercher « le coupable » dans une seule étape est le réflexe le plus courant, et il est presque toujours faux : les temps s’additionnent.',
+        choices: [
+          { t: 'Dans une seule étape, sûrement le serveur', ok: false,
+            why: 'Le serveur ne représente ici que 60 ms sur 220, soit environ un quart du temps.',
+            change: 'Rien ne change : si on ne touchait que le serveur, on gagnerait au mieux 60 ms.' },
+          { t: 'Il est réparti sur plusieurs étapes : réseau, serveur, navigateur', ok: true,
+            why: 'Exact. Le réseau (DNS, connexion, demande, réponse) pèse 110 ms, le serveur 60 ms, le navigateur 50 ms. Aucune étape ne suffit à expliquer le total.',
+            change: 'La trace se colore par couche : pour aller plus vite, on cherche d’abord quelles étapes on peut raccourcir ou éviter.',
+            cons: 'Total : 220 ms = 110 ms de réseau + 60 ms de serveur + 50 ms d’affichage. Améliorer une seule couche ne suffit pas toujours.',
+            outcome: { trace: S1_TRACE, focus: 'all' } },
+          { t: 'Presque tout dans le DNS', ok: false,
+            why: 'Le DNS ne prend ici que 30 ms. Il est indispensable, mais il n’est pas l’étape la plus longue.',
+            change: 'Rien ne change : l’annuaire n’est qu’une étape parmi sept.' },
+          { t: 'Uniquement dans la base de données', ok: false,
+            why: 'La base de données est une partie des 60 ms du serveur. Elle n’explique pas les 160 ms restantes.',
+            change: 'Rien ne change : accélérer la base ne raccourcit ni le réseau ni l’affichage.' }
+        ]
+      },
+      {
+        kind: 'single',
+        situation: 'Un visiteur **revient** sur NEXUS DEMO quelques minutes plus tard. Le serveur n’a pas changé. Pourtant, sa page s’affiche en **126 ms** au lieu de 220.',
+        ask: 'Qu’est-ce qui explique ce gain ?',
+        principle: 'Éviter de refaire un voyage est la façon la plus rapide de gagner du temps : c’est le rôle des mémoires (caches).',
+        others: 'HTTPS protège l’échange mais ajoute une poignée de main. Supprimer le DNS est impossible : sans adresse, aucun paquet ne sait où aller.',
+        choices: [
+          { t: 'Le serveur est devenu plus puissant', ok: false,
+            why: 'Le travail du serveur est resté à 60 ms. Ce n’est pas lui qui a changé.',
+            change: 'Rien ne change côté serveur.' },
+          { t: 'Des résultats sont déjà mémorisés : adresse, connexion, fichiers', ok: true,
+            why: 'Oui. L’adresse DNS, la connexion et les fichiers sont gardés. Plusieurs étapes disparaissent ou raccourcissent, sans rien toucher au serveur.',
+            change: 'Les étapes DNS, connexion et affichage raccourcissent : le total passe de 220 ms à 126 ms.',
+            cons: 'Visite de retour : 126 ms. Le travail du serveur (60 ms) reste identique.',
+            outcome: { trace: S1_TRACE_BACK, focus: 'all' } },
+          { t: 'On a passé le site en HTTPS pour accélérer', ok: false,
+            why: 'HTTPS ajoute une poignée de main (TLS). Il protège l’échange et prouve l’identité du site, mais il n’accélère pas la visite.',
+            change: 'Rien ne s’accélère : on ajouterait une étape.' }
+        ]
+      }
+    ]
+  });
+
+  /* ================= 2. DNS (chapitre 5) ================= */
+  var S2_BEFORE = [
+    b('Visiteurs', 'chain', [n('v', 'Visiteurs'), n('res', 'Résolveur DNS', 'a gardé 203.0.113.7')]),
+    b('Annuaire officiel', 'group', [n('auth', 'nexus-demo.example', 'A 203.0.113.7 · TTL 24 h')]),
+    b('Destination', 'group', [n('old', 'Ancien serveur', '203.0.113.7')])
+  ];
+  var S2_AFTER = [
+    b('Visiteurs', 'chain', [n('v', 'Visiteurs'), n('res', 'Résolveur DNS', 'garde encore l’ancienne', 'warn')]),
+    b('Annuaire officiel', 'group', [n('auth', 'nexus-demo.example', 'A 198.51.100.20 · TTL 24 h', 'new')]),
+    b('Destinations', 'group', [n('old', 'Ancien serveur', 'reçoit encore des visiteurs', 'warn'), n('new', 'Nouveau serveur', '198.51.100.20', 'new')])
+  ];
+  var S2_TRACE = [
+    s('Le navigateur demande l’adresse', '« Quelle adresse pour nexus-demo.example ? »', null, 'client'),
+    s('Le résolveur regarde sa mémoire', 'Il a déjà la réponse : il ne redemande rien tant que le TTL n’est pas écoulé.', null, 'reseau'),
+    s('Il répond avec ce qu’il a gardé', 'Avant le changement : 203.0.113.7. Après : toujours 203.0.113.7 pour un moment.', null, 'reseau'),
+    s('Le navigateur contacte cette adresse', 'Le DNS n’a rien livré : il a seulement indiqué où aller.', null, 'client')
+  ];
+
+  NQ.scenarios.push({
+    id: 2, chapter: 5, title: 'DNS : trouver un domaine',
+    goal: 'Comprendre la chaîne nom → résolution → destination → cache, et pourquoi un changement n’est pas instantané.',
+    scene: S2_BEFORE, trace: S2_TRACE,
+    questions: [
+      {
+        kind: 'action',
+        situation: 'NEXUS DEMO déménage vers un **nouveau serveur** (198.51.100.20). Pour que les visiteurs arrivent au bon endroit, tu dois changer l’enregistrement DNS du domaine. Le TTL actuel est de **24 heures**.',
+        ask: 'Fais le changement.',
+        principle: 'Le DNS fait correspondre un nom à une destination. C’est un annuaire : il indique où aller, il ne transporte pas la page.',
+        others: 'Il n’y a pas d’autre action possible ici : change l’enregistrement, puis observe.',
+        choices: [
+          { t: 'Changer l’adresse de nexus-demo.example vers 198.51.100.20', ok: true,
+            why: 'C’est fait : l’annuaire officiel affiche la nouvelle adresse. Mais regarde le schéma : des résolveurs ont encore l’ancienne réponse en mémoire.',
+            change: 'L’annuaire officiel pointe vers le nouveau serveur. Des visiteurs, eux, arrivent encore sur l’ancien.',
+            cons: '10 minutes après le changement, une partie des visiteurs voit encore l’ancien serveur.',
+            outcome: { scene: S2_AFTER } }
+        ]
+      },
+      {
+        kind: 'single',
+        situation: 'Dix minutes après le changement, certains visiteurs voient encore l’**ancien** serveur, d’autres le **nouveau**. Personne n’a rien cassé.',
+        ask: 'Pourquoi une partie des visiteurs voit-elle encore l’ancienne destination ?',
+        principle: 'Le cache et le TTL : un résolveur mémorise la réponse pendant la durée annoncée, sans reposer la question.',
+        others: 'Le DNS ne livre jamais la page : il donne une adresse. Ni la vitesse du nouveau serveur, ni le navigateur n’expliquent des destinations différentes.',
+        choices: [
+          { t: 'Des résolveurs ont mémorisé l’ancienne réponse (cache, TTL)', ok: true,
+            why: 'Oui. Un résolveur garde la réponse pendant le TTL (ici 24 h). Tant qu’elle n’a pas expiré, il redonne l’ancienne adresse sans interroger l’annuaire.',
+            change: 'Aucun composant ne change : seule la durée de la mémoire explique le retard.',
+            cons: 'Pendant un temps pouvant aller jusqu’à 24 h, deux populations de visiteurs coexistent.',
+            outcome: { scene: S2_AFTER } },
+          { t: 'Le DNS n’a pas encore envoyé la page au nouveau serveur', ok: false,
+            why: 'Le DNS n’envoie jamais de page. Il donne une adresse ; c’est le navigateur qui contacte ensuite le serveur.',
+            change: 'Rien ne change : cette idée mélange l’annuaire et le transport.' },
+          { t: 'Le nouveau serveur est trop lent à démarrer', ok: false,
+            why: 'Si le nouveau serveur était lent, tous ceux qui y arrivent attendraient, mais personne n’arriverait à l’ancien.',
+            change: 'Rien ne change.' },
+          { t: 'Le navigateur de certains visiteurs est cassé', ok: false,
+            why: 'Le même navigateur qui affiche l’ancien serveur affichera le nouveau dès que la mémoire expire : il fonctionne.',
+            change: 'Rien ne change.' }
+        ]
+      },
+      {
+        kind: 'single',
+        situation: 'Tu dois recommencer un déménagement le mois prochain, et cette fois tu veux **limiter** ce retard.',
+        ask: 'Que fais-tu avant le déménagement ?',
+        principle: 'Le TTL est un compromis annoncé à l’avance : court, il accélère un changement ; long, il économise des questions.',
+        others: 'Tu ne contrôles pas les résolveurs ni les navigateurs des visiteurs : le seul levier est la durée annoncée. Un serveur plus puissant n’agit pas sur la mémoire des annuaires, et attendre 24 h laisse des visiteurs mal dirigés.',
+        choices: [
+          { t: 'Baisser le TTL (par exemple à 60 secondes) quelques jours avant', ok: true,
+            why: 'Oui. Avec un TTL court déjà en place, les mémoires expirent en une minute et la nouvelle adresse est vue presque partout en quelques minutes.',
+            change: 'L’annuaire annonce « garde cette réponse 60 s » : le retard passe de 24 h à environ 1 min.',
+            cons: 'Le retard maximal tombe de 24 heures à environ 1 minute.',
+            outcome: { scene: [
+              b('Visiteurs', 'chain', [n('v', 'Visiteurs'), n('res', 'Résolveur DNS', 'expire après 60 s')]),
+              b('Annuaire officiel', 'group', [n('auth', 'nexus-demo.example', 'A 198.51.100.20 · TTL 60 s', 'new')]),
+              b('Destination', 'group', [n('new', 'Nouveau serveur', '198.51.100.20', 'new')])
+            ] } },
+          { t: 'Vider le cache de chaque visiteur', ok: false,
+            why: 'Tu ne contrôles ni leur navigateur ni leur résolveur. Cette solution n’existe pas.',
+            change: 'Rien ne change.' },
+          { t: 'Acheter un serveur plus puissant', ok: false,
+            why: 'Le problème n’est pas la capacité du serveur mais la mémoire des annuaires.',
+            change: 'Rien ne change : le nouveau serveur serait plus puissant, mais sa visibilité resterait retardée.' },
+          { t: 'Attendre un jour entier avant de communiquer', ok: 'part',
+            why: 'Ça finit par marcher, car tout a expiré après 24 h. Mais pendant ce temps, des visiteurs sont mal dirigés. Mieux vaut le prévoir.',
+            change: 'Rien ne change pendant l’attente.' }
+        ]
+      }
+    ]
+  });
+
+  /* ================= 3. ROUTAGE (chapitre 6) ================= */
+  var S3_BASE = [
+    b('Chemin A (le plus court)', 'chain', [n('you', 'Toi'), n('R1', 'R1'), n('R2', 'R2'), n('R3', 'R3'), n('R5', 'R5')], { note: '≈ 33 ms jusqu’au serveur' }),
+    b('Chemin B (détour)', 'chain', [n('you2', 'Toi'), n('R1b', 'R1'), n('R4', 'R4'), n('R5b', 'R5')], { note: '≈ 58 ms jusqu’au serveur' })
+  ];
+  var S3_CUT = [
+    b('Chemin A', 'chain', [n('you', 'Toi'), n('R1', 'R1'), n('R2', 'R2'), n('R3', 'R3', 'lien vers R5 coupé', 'down'), n('R5', 'R5')], { note: 'Lien R3–R5 coupé', cut: 3 }),
+    b('Chemin B', 'chain', [n('you2', 'Toi'), n('R1b', 'R1'), n('R4', 'R4'), n('R5b', 'R5')], { note: 'Toujours disponible' })
+  ];
+  var S3_TRACE = [
+    s('Ton paquet part', 'Il porte l’adresse de destination, rien d’autre pour guider.', null, 'client'),
+    s('R1 choisit le prochain saut', 'R1 consulte sa table : R2 ou R4 ? Il ne choisit que la suite immédiate.', null, 'reseau'),
+    s('Le saut suivant décide à son tour', 'Chaque routeur refait le même choix pour le saut qui suit.', null, 'reseau'),
+    s('Le dernier routeur remet au serveur', 'R5 est relié directement au serveur : le paquet arrive.', null, 'reseau')
+  ];
+
+  NQ.scenarios.push({
+    id: 3, chapter: 6, title: 'Routage : saut par saut',
+    goal: 'Comprendre qu’un routeur choisit le prochain saut, pas le trajet complet.',
+    scene: S3_CUT, trace: S3_TRACE,
+    questions: [
+      {
+        kind: 'single',
+        situation: 'Ton paquet peut atteindre le serveur par deux chemins. Soudain, le **lien entre R3 et R5 tombe** : le chemin A, le plus court, est coupé.',
+        ask: 'Quel chemin le paquet peut-il encore emprunter ?',
+        principle: 'Internet est un réseau maillé : plusieurs chemins existent. Un lien qui tombe ne coupe pas la communication tant qu’un autre passage reste ouvert.',
+        others: 'Attendre la réparation n’est pas nécessaire. Le chemin A est coupé : l’emprunter perd le paquet. Et personne ne « planifie » le trajet à l’avance.',
+        choices: [
+          { t: 'Le chemin A, via R2 et R3', ok: false,
+            why: 'Le lien R3–R5 est coupé : le paquet arriverait à R3 et ne pourrait pas continuer.',
+            change: 'Rien ne change : le paquet resterait bloqué.' },
+          { t: 'Le chemin B, via R4', ok: true,
+            why: 'Oui. R1 → R4 → R5 → serveur est encore entièrement disponible. Le trajet est plus long (≈ 58 ms au lieu de 33 ms), mais la communication continue.',
+            change: 'Les routeurs se mettent à privilégier R1 → R4 : le trajet s’allonge, mais il existe.',
+            cons: 'Le paquet arrive avec 25 ms de plus. Sans le chemin B, il serait perdu.',
+            outcome: { scene: [
+              b('Chemin A', 'chain', [n('you', 'Toi'), n('R1', 'R1'), n('R2', 'R2'), n('R3', 'R3', 'lien coupé', 'down'), n('R5', 'R5')], { note: 'Coupé', cut: 3 }),
+              b('Chemin B emprunté', 'chain', [n('you2', 'Toi', '', 'new'), n('R1b', 'R1', '', 'new'), n('R4', 'R4', '', 'new'), n('R5b', 'R5', '', 'new')], { note: '≈ 58 ms jusqu’au serveur' })
+            ] } },
+          { t: 'Aucun : il faut attendre la réparation', ok: false,
+            why: 'Tant qu’un autre chemin existe, les routeurs le trouvent seuls en quelques instants. L’attente n’est pas nécessaire.',
+            change: 'Rien ne change.' }
+        ]
+      },
+      {
+        kind: 'single',
+        situation: 'Le paquet est arrivé par le chemin B. Tu te demandes **qui a décidé** de ce détour.',
+        ask: 'Comment le trajet a-t-il été choisi ?',
+        principle: 'Un routeur ne connaît pas le trajet complet : il applique sa table de routage pour décider du prochain saut seulement.',
+        others: 'Aucun routeur ne voit tout Internet, et ton navigateur n’a aucun moyen de choisir les routeurs. Le trajet se construit saut après saut.',
+        choices: [
+          { t: 'Un routeur central a planifié tout le trajet à l’avance', ok: false,
+            why: 'Il n’existe pas de routeur central qui connaîtrait tous les chemins du monde.',
+            change: 'Rien ne change : ce modèle n’existe pas.' },
+          { t: 'Chaque routeur a choisi seulement le prochain saut, d’après sa table', ok: true,
+            why: 'Exact. R1 a choisi R4 plutôt que R2 car il savait que ce côté était coupé ; R4 a choisi R5, et ainsi de suite.',
+            change: 'Les tables de routage de R1 et de R2 sont mises à jour : R1 envoie désormais vers R4.',
+            cons: 'Le trajet complet n’existe nulle part à l’avance : il se découvre saut après saut.',
+            outcome: { scene: [
+              b('Ce que chaque routeur décide', 'group', [n('t1', 'R1', 'prochain saut : R4 (R2 mène à une impasse)', 'new'), n('t4', 'R4', 'prochain saut : R5', 'new'), n('t5', 'R5', 'prochain saut : le serveur', 'new')])
+            ] } },
+          { t: 'Ton navigateur a choisi chaque routeur', ok: false,
+            why: 'Ton navigateur envoie le paquet vers son premier routeur et c’est tout : il ne connaît pas le reste du chemin.',
+            change: 'Rien ne change.' }
+        ]
+      }
+    ]
+  });
+
+  /* ================= 4. SERVEUR SATURÉ (chapitre 15) ================= */
+  var S4_BASE = [
+    b('Visiteurs', 'group', [n('v', '1 500 visiteurs', 'en même temps')]),
+    b('NEXUS DEMO', 'group', [n('A', 'Serveur A', 'capacité ≈ 800 · saturé', 'down')])
+  ];
+  var S4_TRACE = [
+    s('1 500 visiteurs arrivent', 'En même temps, sur une seule adresse.', null, 'client'),
+    s('Le serveur A reçoit tout', 'Il ne peut traiter que ≈ 800 demandes à la fois.', null, 'serveur'),
+    s('Les demandes s’empilent', 'Les temps de réponse grimpent, des demandes expirent.', null, 'serveur'),
+    s('Des visiteurs voient une erreur', 'Quand la charge dépasse 100 % de la capacité, des erreurs apparaissent.', null, 'client')
+  ];
+
+  NQ.scenarios.push({
+    id: 4, chapter: 15, title: 'Serveur saturé',
+    goal: 'Comprendre la saturation et choisir la bonne famille de réponse : répartir la charge.',
+    scene: S4_BASE, trace: S4_TRACE,
+    questions: [
+      {
+        kind: 'single',
+        situation: 'NEXUS DEMO tourne sur **un seul serveur**. Il peut traiter environ **800 demandes** à la fois, mais **1 500 visiteurs** arrivent en même temps. Les pages mettent des secondes à s’afficher, et certaines échouent.',
+        ask: 'Quelle décision règle le mieux la saturation ?',
+        principle: 'La saturation est un problème de capacité : plus de demandes que de ressources. Le bon réflexe est de partager la charge plutôt que d’en demander toujours plus à une seule machine.',
+        others: 'Le DNS ne fournit aucune capacité : il indique seulement où aller. Augmenter les ressources aide mais reste limité et laisse un point unique de panne. Le cache soulage le serveur pour les contenus répétés, mais ne remplace pas la capacité pour ce qui est calculé à chaque visite.',
+        choices: [
+          { t: 'Ajouter un second serveur et répartir les demandes entre les deux', ok: true,
+            why: 'Oui. Deux serveurs traitent ≈ 1 600 demandes, et un répartiteur de charge envoie chaque demande à l’un ou à l’autre. On peut en ajouter d’autres si le trafic grandit.',
+            change: 'Un répartiteur de charge (load balancer) apparaît devant les serveurs. Le schéma passe de « un serveur » à « un point d’entrée, plusieurs serveurs ».',
+            cons: 'La charge est partagée : chaque serveur reçoit environ 750 demandes. Les erreurs disparaissent, et le site peut encore grandir.',
+            outcome: { scene: [
+              b('Visiteurs', 'group', [n('v', '1 500 visiteurs')]),
+              b('Point d’entrée', 'group', [n('lb', 'Répartiteur', 'load balancer', 'new')]),
+              b('NEXUS DEMO', 'group', [n('A', 'Serveur A', '≈ 750 demandes'), n('B', 'Serveur B', '≈ 750 demandes', 'new')])
+            ] } },
+          { t: 'Augmenter les ressources du serveur (plus de mémoire, plus de puissance)', ok: 'part',
+            why: 'Ça aide, mais on touche vite une limite : une machine ne grossit pas à l’infini, coûte de plus en plus cher, et reste un point unique de panne.',
+            change: 'Le schéma ne change pas : toujours une seule machine, juste plus grosse.' },
+          { t: 'Mettre un cache devant les pages', ok: 'part',
+            why: 'Un cache évite de recalculer des contenus identiques, et c’est utile. Mais ce qui est personnalisé à chaque visite doit toujours être calculé : le cache ne remplace pas la capacité.',
+            change: 'Une mémoire apparaît devant le serveur, mais la capacité de calcul reste de 800.' },
+          { t: 'Déplacer le DNS vers un autre fournisseur', ok: false,
+            why: 'Le DNS ne transporte pas la page et ne calcule rien. Changer d’annuaire ne donne aucune capacité de plus au serveur.',
+            change: 'Rien ne change : le serveur reçoit toujours 1 500 demandes.' }
+        ]
+      }
+    ]
+  });
+})();
+
+/* NEXUS TRACE — scénarios 5 à 8 */
+(function () {
+  var NQ = (typeof window !== 'undefined' ? window : globalThis).NQ;
+  var n = NQ.n, b = NQ.b, s = NQ.s;
+
+  /* ================= 5. PLUSIEURS SERVEURS (chapitre 16) ================= */
+  var S5_SCENE = [
+    b('Visiteurs', 'group', [n('v', 'Visiteurs')]),
+    b('Point d’entrée', 'group', [n('lb', 'Répartiteur', 'load balancer')]),
+    b('Serveurs NEXUS DEMO', 'group', [n('A', 'Serveur A'), n('B', 'Serveur B'), n('C', 'Serveur C')]),
+    b('Données', 'group', [n('db', 'Base de données')])
+  ];
+  var S5_SICK = [
+    b('Visiteurs', 'group', [n('v', 'Visiteurs')]),
+    b('Point d’entrée', 'group', [n('lb', 'Répartiteur', 'envoie encore au serveur B', 'warn')]),
+    b('Serveurs NEXUS DEMO', 'group', [n('A', 'Serveur A'), n('B', 'Serveur B', 'ne répond plus', 'down'), n('C', 'Serveur C')]),
+    b('Données', 'group', [n('db', 'Base de données')])
+  ];
+  var S5_TRACE = [
+    s('Une demande arrive', 'Le visiteur contacte une seule adresse : celle du répartiteur.', null, 'client'),
+    s('Le répartiteur choisit un serveur', 'Selon une règle : tour de rôle, ou le moins chargé.', null, 'serveur'),
+    s('Le serveur répond', 'Le visiteur ne sait pas lequel des trois a travaillé.', null, 'serveur')
+  ];
+
+  NQ.scenarios.push({
+    id: 5, chapter: 16, title: 'Plusieurs serveurs',
+    goal: 'Comprendre la répartition de charge et le contrôle de santé.',
+    scene: S5_SCENE, trace: S5_TRACE,
+    questions: [
+      {
+        kind: 'single',
+        situation: 'NEXUS DEMO a maintenant **trois serveurs** derrière un répartiteur. Des centaines de demandes arrivent chaque minute.',
+        ask: 'Comment le répartiteur doit-il distribuer les demandes ?',
+        principle: 'Un répartiteur de charge donne une seule adresse aux visiteurs et partage le travail entre plusieurs serveurs, selon une règle.',
+        others: 'Tout envoyer au premier serveur recrée la saturation. Laisser le visiteur choisir est impraticable : il ne connaît ni les serveurs ni leur état.',
+        choices: [
+          { t: 'Tout envoyer au serveur A tant qu’il répond', ok: false,
+            why: 'Le serveur A resterait saturé alors que B et C ne feraient rien : on aurait payé trois serveurs pour n’en utiliser qu’un.',
+            change: 'Rien ne change : on retrouve le problème du serveur unique.' },
+          { t: 'Répartir à tour de rôle, ou vers le serveur le moins chargé', ok: true,
+            why: 'Oui. Le tour de rôle (A, B, C, A, B, C…) est simple et suffit quand les demandes se ressemblent. « Vers le moins chargé » est plus fin quand certaines demandes sont longues.',
+            change: 'Le répartiteur applique une règle de distribution : chaque serveur reçoit environ un tiers du trafic.',
+            cons: 'Chaque serveur traite environ un tiers des demandes. Aucun ne sature.',
+            outcome: { scene: [
+              b('Visiteurs', 'group', [n('v', 'Visiteurs')]),
+              b('Point d’entrée', 'group', [n('lb', 'Répartiteur', 'tour de rôle', 'new')]),
+              b('Serveurs NEXUS DEMO', 'group', [n('A', 'Serveur A', '≈ 1/3 des demandes', 'new'), n('B', 'Serveur B', '≈ 1/3 des demandes', 'new'), n('C', 'Serveur C', '≈ 1/3 des demandes', 'new')]),
+              b('Données', 'group', [n('db', 'Base de données')])
+            ] } },
+          { t: 'Laisser chaque visiteur choisir son serveur', ok: false,
+            why: 'Le visiteur ne connaît ni les serveurs ni leur charge. Un point d’entrée unique est justement ce qui simplifie sa vie.',
+            change: 'Rien ne change.' }
+        ]
+      },
+      {
+        kind: 'single',
+        situation: 'Le serveur **B tombe en panne**. Le répartiteur lui envoie encore un tiers des demandes : **un visiteur sur trois** voit une erreur.',
+        ask: 'Comment éviter d’envoyer des demandes à un serveur malade ?',
+        principle: 'Le contrôle de santé : le répartiteur interroge régulièrement chaque serveur et retire de la distribution celui qui ne répond plus.',
+        others: 'Attendre les plaintes laisse des visiteurs en erreur pendant longtemps. Éteindre des serveurs réduit la capacité sans régler le problème. Arrêter le répartiteur coupe le site entier.',
+        choices: [
+          { t: 'Un contrôle de santé régulier retire automatiquement le serveur qui ne répond pas', ok: true,
+            why: 'Oui. Le répartiteur teste chaque serveur à intervalle court. Dès que B échoue, il cesse de lui envoyer des demandes : les visiteurs ne voient plus l’erreur.',
+            change: 'Le serveur B sort de la liste active. A et C se partagent le trafic, et B est réintégré quand il répond de nouveau.',
+            cons: 'A et C reçoivent chacun la moitié du trafic. Les erreurs disparaissent, au prix d’une capacité réduite d’un tiers.',
+            outcome: { scene: [
+              b('Visiteurs', 'group', [n('v', 'Visiteurs')]),
+              b('Point d’entrée', 'group', [n('lb', 'Répartiteur', 'contrôle de santé', 'new')]),
+              b('Serveurs NEXUS DEMO', 'group', [n('A', 'Serveur A', '≈ 1/2 des demandes'), n('B', 'Serveur B', 'retiré de la liste', 'down'), n('C', 'Serveur C', '≈ 1/2 des demandes')]),
+              b('Données', 'group', [n('db', 'Base de données')])
+            ] } },
+          { t: 'Attendre que des visiteurs se plaignent', ok: false,
+            why: 'Pendant ce temps, un visiteur sur trois reçoit une erreur. Une défaillance doit être détectée par le système, pas par les clients.',
+            change: 'Rien ne change : B continue de recevoir des demandes.' },
+          { t: 'Éteindre un serveur sur deux par précaution', ok: false,
+            why: 'On réduirait la capacité sans cibler le serveur malade : le trafic dépasserait vite ce que les serveurs restants peuvent traiter.',
+            change: 'Moins de serveurs, donc moins de capacité.' },
+          { t: 'Arrêter le répartiteur le temps de réparer', ok: false,
+            why: 'Le répartiteur est la porte d’entrée : l’arrêter coupe tout le site, y compris les serveurs sains.',
+            change: 'Tout le site devient indisponible.' }
+        ]
+      },
+      {
+        kind: 'single',
+        situation: 'Un visiteur recharge la page de NEXUS DEMO trois fois de suite et voit trois compteurs de visites différents : **4 217, 983 puis 2 560**. Chaque serveur garde son propre compteur en mémoire.',
+        ask: 'Quelle correction est la bonne ?',
+        principle: 'Quand plusieurs serveurs répondent pour le même site, l’état qui doit être commun (comme un compteur) doit vivre en un endroit partagé.',
+        others: 'Copier les compteurs à la main les désynchroniserait à nouveau. Revenir à un seul serveur ferait revenir la saturation. Noter qu’un état partagé crée un nouveau point unique de panne : la base de données.',
+        choices: [
+          { t: 'Garder le compteur dans une base de données partagée par les trois serveurs', ok: true,
+            why: 'Oui. Les trois serveurs lisent et écrivent le même compteur : peu importe lequel répond, la valeur est la même. Attention : cette base devient un point unique de panne.',
+            change: 'Le compteur quitte les serveurs et rejoint la base de données commune. Les trois serveurs deviennent interchangeables.',
+            cons: 'Le compteur affiche la même valeur quel que soit le serveur. Mais si la base tombe, tout tombe : on y reviendra au scénario 7.',
+            outcome: { scene: [
+              b('Serveurs NEXUS DEMO', 'group', [n('A', 'Serveur A', 'lit le compteur commun'), n('B', 'Serveur B', 'lit le compteur commun'), n('C', 'Serveur C', 'lit le compteur commun')]),
+              b('Données partagées', 'group', [n('db', 'Base de données', 'un seul compteur : 4 217', 'new')])
+            ] } },
+          { t: 'Recopier à la main les compteurs d’un serveur à l’autre', ok: false,
+            why: 'Les compteurs divergeraient de nouveau dès la prochaine visite.',
+            change: 'Rien ne change durablement.' },
+          { t: 'Revenir à un seul serveur', ok: false,
+            why: 'Le compteur serait cohérent, mais la saturation reviendrait : on a retrouvé le problème d’origine.',
+            change: 'On perd la capacité et la tolérance aux pannes.' }
+        ]
+      }
+    ]
+  });
+
+  /* ================= 6. CACHE / CDN (chapitre 17) ================= */
+  var S6_SCENE = [
+    b('Visiteurs éloignés', 'group', [n('v1', 'Cotonou'), n('v2', 'Montréal'), n('v3', 'Tokyo')]),
+    b('Très loin', 'group', [n('srv', 'Serveur NEXUS DEMO', 'basé à Paris')])
+  ];
+  var S6_TRACE = [
+    s('Un visiteur lointain demande le logo', 'Chaque image fait le voyage jusqu’à Paris.', null, 'client'),
+    s('Le voyage coûte du temps', 'Plus la distance est grande, plus la latence augmente.', null, 'reseau'),
+    s('Le serveur renvoie le même fichier', 'Pour chaque visiteur, des milliers de fois.', null, 'serveur')
+  ];
+
+  NQ.scenarios.push({
+    id: 6, chapter: 17, title: 'Cache et CDN',
+    goal: 'Rapprocher les contenus identiques des visiteurs, sans mettre en cache ce qui est personnel.',
+    scene: S6_SCENE, trace: S6_TRACE,
+    questions: [
+      {
+        kind: 'single',
+        situation: 'Les visiteurs de NEXUS DEMO sont dispersés : **Cotonou, Montréal, Tokyo**. Le serveur est à Paris. Le logo, la vidéo d’accueil et les images font chaque fois le long voyage.',
+        ask: 'Quelle couche rapprocherait les contenus identiques des visiteurs ?',
+        principle: 'Un CDN garde des copies de contenus déjà disponibles dans des points de présence proches des visiteurs. Il rapproche ; il ne calcule pas.',
+        others: 'Un serveur plus gros ne raccourcit pas la distance. Plus de bases de données n’aident pas à servir un logo. Un DNS plus rapide accélère la question « où ? » mais pas le transport du contenu.',
+        choices: [
+          { t: 'Un CDN : des copies placées près des visiteurs', ok: true,
+            why: 'Oui. Le CDN garde les contenus identiques (logo, vidéo, styles) dans des points de présence proches. Le visiteur de Cotonou ne va plus chercher le logo à Paris.',
+            change: 'Des relais de cache apparaissent près des visiteurs. Le serveur de Paris n’est sollicité que la première fois, ou pour ce qui ne peut pas être copié.',
+            cons: 'Le logo se charge depuis un point de présence proche : moins de distance, donc moins de latence. Le serveur de Paris reçoit beaucoup moins de demandes.',
+            outcome: { scene: [
+              b('Visiteurs éloignés', 'group', [n('v1', 'Cotonou'), n('v2', 'Montréal'), n('v3', 'Tokyo')]),
+              b('Points de présence CDN', 'group', [n('e1', 'Relais proche', 'copies', 'new'), n('e2', 'Relais proche', 'copies', 'new'), n('e3', 'Relais proche', 'copies', 'new')]),
+              b('Origine', 'group', [n('srv', 'Serveur NEXUS DEMO', 'Paris : sollicité moins souvent')])
+            ] } },
+          { t: 'Un serveur plus gros à Paris', ok: false,
+            why: 'Un serveur plus puissant calcule plus vite, mais ne raccourcit pas la distance entre Paris et Tokyo.',
+            change: 'Rien ne change côté distance.' },
+          { t: 'Plusieurs bases de données', ok: false,
+            why: 'Les bases de données stockent des données de l’application. Elles ne servent pas à rapprocher un logo ou une vidéo.',
+            change: 'Rien ne change.' },
+          { t: 'Un DNS plus rapide', ok: false,
+            why: 'Le DNS accélère la réponse à « quelle adresse ? », pas le transport de la vidéo ou de l’image.',
+            change: 'Rien ne change.' }
+        ]
+      },
+      {
+        kind: 'multi',
+        situation: 'Voici six contenus de NEXUS DEMO. Le CDN peut garder des copies, mais pas de tout.',
+        ask: 'Coche tous les contenus qu’il est approprié de mettre en cache / CDN.',
+        principle: 'On met en cache ce qui est identique pour tous et change peu. Jamais un contenu personnel ou critique.',
+        others: 'Le CDN rapproche un contenu déjà disponible ; il ne fait pas le calcul à la place du serveur. Un fil d’actualité personnalisé, un solde ou un mot de passe sont propres à une personne : les copier, c’est risquer de les montrer à quelqu’un d’autre.',
+        choices: [
+          { t: 'Le logo', ok: true, why: 'Identique pour tous, change très rarement : cas idéal.' },
+          { t: 'Le fil d’actualité personnalisé d’un utilisateur', ok: false, why: 'Propre à chaque personne. Un cache pourrait le montrer à quelqu’un d’autre.' },
+          { t: 'Une vidéo de présentation', ok: true, why: 'Lourde, identique pour tous : le CDN la rapproche très bien.' },
+          { t: 'Le solde d’un compte', ok: false, why: 'Donnée personnelle et critique, et elle change : ne jamais la mettre en cache partagé.' },
+          { t: 'La page d’accueil (mise à jour toutes les heures)', ok: true, why: 'Identique pour tous et changeante peu souvent : on peut la garder environ une heure.' },
+          { t: 'Un mot de passe', ok: false, why: 'Secret personnel : jamais copié, jamais mis en cache.' }
+        ],
+        okCons: 'Les trois contenus communs partent au CDN. Les données personnelles restent calculées pour chaque utilisateur, sur le serveur.',
+        badCons: 'Un contenu personnel en cache est un risque : un visiteur pourrait recevoir les données d’un autre. Retire-le de la sélection.',
+        outcomeOk: { scene: [
+          b('Au CDN (copies partagées)', 'group', [n('c1', 'Logo', 'copié', 'new'), n('c2', 'Vidéo', 'copiée', 'new'), n('c3', 'Page d’accueil', 'copie 1 h', 'new')]),
+          b('Toujours sur le serveur', 'group', [n('p1', 'Fil perso', 'calculé'), n('p2', 'Solde', 'calculé'), n('p3', 'Mot de passe', 'jamais copié')])
+        ] }
+      }
+    ]
+  });
+
+  /* ================= 7. PANNE (chapitre 19) ================= */
+  var S7_SCENE = [
+    b('Visiteurs', 'group', [n('v', 'Visiteurs')]),
+    b('Point d’entrée', 'group', [n('lb', 'Répartiteur', 'un seul')]),
+    b('Serveurs', 'group', [n('A', 'Serveur A'), n('B', 'Serveur B', 'tombé', 'down'), n('C', 'Serveur C')]),
+    b('Données', 'group', [n('db', 'Base de données', 'une seule')])
+  ];
+  var S7_TRACE = [
+    s('Le serveur B tombe', 'Le contrôle de santé le retire : A et C continuent. Aucune interruption visible.', null, 'serveur'),
+    s('La base de données tombe', 'Les trois serveurs sont sains, mais aucun ne peut lire le compteur.', null, 'serveur'),
+    s('Tout le site s’arrête', 'Une seule base : si elle tombe, rien ne fonctionne.', null, 'client')
+  ];
+
+  NQ.scenarios.push({
+    id: 7, chapter: 19, title: 'Panne',
+    goal: 'Identifier les points uniques de panne et comprendre que la redondance ne protège que ce qui est réellement doublé.',
+    scene: S7_SCENE, trace: S7_TRACE,
+    questions: [
+      {
+        kind: 'multi',
+        situation: 'Le serveur B tombe : le site continue, car A et C prennent le relais. Mais ensuite la **base de données** tombe, et tout s’arrête.',
+        ask: 'Coche tous les points uniques de panne de cette architecture.',
+        principle: 'Un point unique de panne est un composant sans doublure : s’il tombe, le service tombe.',
+        others: 'Les serveurs ne sont pas un point unique de panne : on en a trois. C’est le répartiteur et la base de données, présents en un seul exemplaire, qui le sont.',
+        choices: [
+          { t: 'Le répartiteur de charge', ok: true, why: 'Un seul exemplaire : s’il tombe, aucun visiteur n’atteint les serveurs.' },
+          { t: 'Les trois serveurs', ok: false, why: 'Ils sont trois et interchangeables : la perte de l’un d’eux n’interrompt pas le site.' },
+          { t: 'La base de données', ok: true, why: 'Un seul exemplaire : si elle tombe, les serveurs sains ne peuvent plus rien servir. C’est le cas que le scénario vient de montrer.' }
+        ],
+        okCons: 'Deux points uniques repérés : le répartiteur et la base. Les trois serveurs, eux, sont redondants.',
+        badCons: 'Reprends : un point unique est un composant présent en un seul exemplaire.',
+        outcomeOk: { scene: [
+          b('Visiteurs', 'group', [n('v', 'Visiteurs')]),
+          b('Point d’entrée', 'group', [n('lb', 'Répartiteur', 'point unique de panne', 'warn')]),
+          b('Serveurs', 'group', [n('A', 'Serveur A', 'redondant'), n('B', 'Serveur B', 'redondant'), n('C', 'Serveur C', 'redondant')]),
+          b('Données', 'group', [n('db', 'Base de données', 'point unique de panne', 'warn')])
+        ] }
+      },
+      {
+        kind: 'single',
+        situation: 'Tu as les moyens de doubler **un seul** composant ce mois-ci. Tu veux éviter une interruption visible, et que la panne de la base ne détruise pas de données.',
+        ask: 'Que doubles-tu en priorité ?',
+        principle: 'La redondance ne protège que ce qui a réellement été doublé. On commence par le composant dont la perte est la plus grave et la plus difficile à réparer.',
+        others: 'Un quatrième serveur double ce qui l’est déjà. Une sauvegarde nocturne permet de restaurer, mais pas d’éviter l’interruption. Le répartiteur doit aussi être doublé, mais il ne contient pas de données : sa perte est moins grave.',
+        choices: [
+          { t: 'Ajouter un quatrième serveur d’application', ok: false,
+            why: 'Les serveurs sont déjà redondants : en ajouter un ne règle pas le vrai risque.',
+            change: 'Rien ne change côté point unique.' },
+          { t: 'Répliquer la base de données (une seconde copie prête à prendre le relais)', ok: true,
+            why: 'Oui. La base contient l’état du site. Avec une réplique tenue à jour, si la première tombe, la seconde prend le relais, avec peu ou pas de perte de données.',
+            change: 'Une réplique de la base apparaît : le point unique de panne devient redondant.',
+            cons: 'Si la base principale tombe, la réplique prend le relais. Le site reste en ligne. Restent le répartiteur à doubler plus tard.',
+            outcome: { scene: [
+              b('Visiteurs', 'group', [n('v', 'Visiteurs')]),
+              b('Point d’entrée', 'group', [n('lb', 'Répartiteur', 'toujours un seul', 'warn')]),
+              b('Serveurs', 'group', [n('A', 'Serveur A'), n('B', 'Serveur B'), n('C', 'Serveur C')]),
+              b('Données', 'group', [n('db', 'Base principale', 'écrit et copie'), n('rep', 'Réplique', 'prête au relais', 'new')])
+            ] } },
+          { t: 'Faire une sauvegarde de la base chaque nuit', ok: false,
+            why: 'Une sauvegarde permet de restaurer après coup, mais pendant la restauration le site est arrêté, et tout ce qui s’est passé depuis la dernière sauvegarde est perdu. Sauvegarde et redondance ne sont pas la même chose.',
+            change: 'Le schéma ne change pas : toujours une seule base en service.' },
+          { t: 'Doubler le répartiteur de charge', ok: 'part',
+            why: 'Bonne idée à terme : le répartiteur est un point unique. Mais la base contient les données du site ; sa panne est plus grave et plus difficile à réparer, donc elle passe en premier.',
+            change: 'Le répartiteur serait redondant, mais la base resterait le maillon faible.' }
+        ]
+      }
+    ]
+  });
+
+  /* ================= 8. DÉPLOIEMENT (chapitre 22) ================= */
+  var S8_SCENE = [
+    b('Version en service', 'group', [n('v1', 'NEXUS DEMO v1', '100 % des visiteurs')]),
+    b('À livrer', 'group', [n('v2', 'NEXUS DEMO v2', 'nouvelle version', 'new')])
+  ];
+  var S8_TRACE = [
+    s('Une nouvelle version est prête', 'Elle corrige des bugs et ajoute des fonctions.', null, 'serveur'),
+    s('Elle passe en production', 'Les vrais visiteurs vont l’utiliser.', null, 'client'),
+    s('Un défaut caché apparaît', 'Les tests n’ont pas tout vu : la version v2 provoque des erreurs.', null, 'serveur')
+  ];
+
+  NQ.scenarios.push({
+    id: 8, chapter: 22, title: 'Déploiement',
+    goal: 'Livrer une nouvelle version sans la faire subir à tout le monde, et savoir revenir en arrière.',
+    scene: S8_SCENE, trace: S8_TRACE,
+    questions: [
+      {
+        kind: 'single',
+        situation: 'La version **v2** de NEXUS DEMO est prête. Elle contient, sans que personne le sache, un défaut qui plante **1 requête sur 5**. Le site reçoit environ 1 000 requêtes par minute.',
+        ask: 'Comment déploies-tu v2 ?',
+        principle: 'Un déploiement progressif limite le nombre de visiteurs exposés à un défaut avant qu’on l’ait détecté.',
+        others: 'Un déploiement brutal expose tout le monde d’un coup. Un test chez soi ne reproduit pas la réalité (volume, données, habitudes des visiteurs).',
+        choices: [
+          { t: 'Tout basculer d’un coup sur v2', ok: false,
+            why: 'Les 1 000 requêtes par minute passent toutes par v2 : environ 200 échouent chaque minute, et tous les visiteurs sont touchés avant qu’on s’en aperçoive.',
+            change: 'v1 est remplacée partout : plus aucune version saine en service.',
+            cons: 'Environ 200 requêtes échouent à chaque minute, pour tous les visiteurs.',
+            outcome: { scene: [
+              b('Après bascule brutale', 'group', [n('v1', 'NEXUS DEMO v1', 'retirée', 'down'), n('v2', 'NEXUS DEMO v2', '100 % des visiteurs · 20 % d’erreurs', 'warn')])
+            ] } },
+          { t: 'Déploiement progressif : 10 % des visiteurs, puis 50 %, puis 100 %', ok: true,
+            why: 'Oui. Au premier palier, seuls 10 % des visiteurs passent par v2. Le défaut apparaît sur peu de monde, et on peut s’arrêter avant d’aller plus loin.',
+            change: 'Deux versions cohabitent : v1 sert 90 % des visiteurs, v2 en sert 10 %. On élargit seulement si les mesures restent bonnes.',
+            cons: 'Environ 20 requêtes par minute échouent au lieu de 200 : le défaut est détecté tôt et limité à une petite partie des visiteurs.',
+            outcome: { scene: [
+              b('Premier palier', 'group', [n('v1', 'NEXUS DEMO v1', '90 % des visiteurs'), n('v2', 'NEXUS DEMO v2', '10 % · 20 % d’erreurs', 'warn')])
+            ] } },
+          { t: 'Tester chez toi, puis tout basculer', ok: false,
+            why: 'Un test local ne reproduit ni la charge ni la variété des vrais usages. Il aide, mais il ne remplace pas une montée progressive.',
+            change: 'Même situation qu’un déploiement brutal : tout le monde est exposé.' }
+        ]
+      },
+      {
+        kind: 'single',
+        situation: 'Au premier palier, les erreurs montent à **20 %** chez les visiteurs qui passent par v2. Il faut décider **à l’avance** de ce qui déclenche un retour à v1.',
+        ask: 'Quel principe de retour arrière choisis-tu ?',
+        principle: 'Le retour arrière : on définit un seuil d’erreur à l’avance et on revient automatiquement à la version précédente s’il est dépassé. Le seuil est une décision de conception, pas un chiffre universel.',
+        others: 'Corriger en direct sur la version en service ajoute du risque. Attendre les signalements des utilisateurs retarde la décision. Un seuil à 0 % déclencherait des retours en arrière pour la moindre erreur banale, alors qu’aucun seuil universel n’existe : il dépend du service.',
+        choices: [
+          { t: 'Fixer un seuil (par exemple plus de 2 % d’erreurs pendant 5 minutes) : au-delà, retour automatique à v1', ok: true,
+            why: 'Oui. Avec 20 % d’erreurs, le seuil est dépassé presque tout de suite : on revient à v1, les visiteurs retrouvent un service sain. Le chiffre (2 %, 5 minutes) est un exemple : à toi de le choisir selon la criticité du service.',
+            change: 'Un contrôle compare le taux d’erreur au seuil. S’il le dépasse, le trafic repart vers v1 sans intervention humaine.',
+            cons: 'La version v2 est retirée en quelques minutes. L’incident est court, et limité aux 10 % de visiteurs du premier palier.',
+            outcome: { scene: [
+              b('Après retour arrière', 'group', [n('v1', 'NEXUS DEMO v1', '100 % des visiteurs · rétablie', 'new'), n('v2', 'NEXUS DEMO v2', 'retirée, à corriger', 'down')])
+            ] } },
+          { t: 'Corriger v2 en direct, sans revenir en arrière', ok: false,
+            why: 'Modifier la version en service sous la pression multiplie les risques : on peut ajouter une erreur à l’erreur, pendant que les visiteurs continuent d’en subir.',
+            change: 'Rien ne change : v2 reste en service avec son défaut.' },
+          { t: 'Attendre que des utilisateurs signalent le problème', ok: false,
+            why: 'Les signalements arrivent tard et en désordre. Une mesure automatique décide en quelques minutes.',
+            change: 'Rien ne change.' },
+          { t: 'Revenir en arrière dès la première erreur (seuil de 0 %)', ok: false,
+            why: 'Toute application génère quelques erreurs banales (connexion perdue, etc.). Un seuil à 0 % déclencherait des retours en arrière sans raison. Le seuil se choisit, il n’est pas universel.',
+            change: 'Les retours en arrière deviendraient quasi permanents.' }
+        ]
+      }
+    ]
+  });
+})();
+
+/* NEXUS TRACE — interface du parcours de décisions */
+(function () {
+  var NQ = window.NQ;
+  var SC = NQ.scenarios;
+  var TOTAL = SC.length;
+  var app = document.getElementById('app');
+  var progressEl = document.getElementById('progress');
+
+  /* ---------- état et stockage (localStorage uniquement) ---------- */
+  var saved = { done: {}, first: {} };
+  function load() {
+    try {
+      var raw = localStorage.getItem(NQ.STORE_KEY);
+      if (raw) { var o = JSON.parse(raw); if (o && o.done) saved = { done: o.done || {}, first: o.first || {} }; }
+    } catch (e) { /* stockage indisponible : on continue sans */ }
+  }
+  function save() { try { localStorage.setItem(NQ.STORE_KEY, JSON.stringify(saved)); } catch (e) {} }
+  function reset() { saved = { done: {}, first: {} }; try { localStorage.removeItem(NQ.STORE_KEY); } catch (e) {} }
+
+  function doneCount() { var c = 0; for (var i = 1; i <= TOTAL; i++) if (saved.done[i]) c++; return c; }
+  function firstCount() { var c = 0; for (var i = 1; i <= TOTAL; i++) if (saved.done[i] && saved.first[i]) c++; return c; }
+  function allDone() { return doneCount() === TOTAL; }
+  function unlocked(id) { return allDone() || id === 1 || !!saved.done[id - 1]; }
+  function nextTodo() { for (var i = 1; i <= TOTAL; i++) if (!saved.done[i]) return i; return null; }
+  function byId(id) { return SC[id - 1]; }
+
+  /* session courante */
+  var cur = null; /* { id, qi, answered, result, clean, tried:[], sel:[] , tab, step } */
+
+  /* ---------- utilitaires ---------- */
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function fmt(s) { return esc(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>'); }
+  var LOCK = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M7 11V8a5 5 0 0 1 10 0v3h1.5A1.5 1.5 0 0 1 20 12.5v7a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19.5v-7A1.5 1.5 0 0 1 5.5 11H7zm2 0h6V8a3 3 0 0 0-6 0v3z" fill="currentColor"/></svg>';
+  var CHECK = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9.5 16.2 5.3 12l-1.4 1.4 5.6 5.6L20.3 8.3 18.9 6.9z" fill="currentColor"/></svg>';
+  var STATE_LABEL = { down: 'en panne', warn: 'attention', 'new': 'nouveau', hot: 'observé' };
+  var STATE_MARK = { down: '✕', warn: '!', 'new': '+' };
+
+  /* ---------- progression d’en-tête ---------- */
+  function renderProgress() {
+    var d = doneCount();
+    progressEl.innerHTML =
+      '<span class="pg-num"><strong>' + d + ' / ' + TOTAL + '</strong> scénarios maîtrisés</span>' +
+      '<span class="pg-bar" role="progressbar" aria-valuemin="0" aria-valuemax="' + TOTAL + '" aria-valuenow="' + d + '" aria-label="Progression"><span style="width:' + (d / TOTAL * 100) + '%"></span></span>';
+  }
+
+  /* ---------- schéma (vue Architecture) ---------- */
+  function sceneHTML(scene, compact) {
+    var out = '<div class="scene' + (compact ? ' compact' : '') + '">';
+    scene.forEach(function (blk, bi) {
+      if (bi > 0) out += '<div class="vlink" aria-hidden="true">↓</div>';
+      out += '<div class="blk"><div class="blk-t">' + esc(blk.t) + (blk.note ? ' <span class="blk-note">· ' + esc(blk.note) + '</span>' : '') + '</div>';
+      out += '<div class="nodes ' + blk.mode + '">';
+      blk.nodes.forEach(function (nd, i) {
+        if (blk.mode === 'chain' && i > 0) {
+          var cut = blk.cut === i - 1 || nd.st === 'down' || blk.nodes[i - 1].st === 'down';
+          out += '<span class="arr' + (cut ? ' cut' : '') + '" aria-hidden="true">' + (cut ? '✕' : '→') + '</span>';
+        }
+        out += '<div class="node st-' + nd.st + '"><span class="n-l">' + esc(nd.l) + '</span>' +
+          (nd.s ? '<span class="n-s">' + esc(nd.s) + '</span>' : '') +
+          (STATE_MARK[nd.st] ? '<span class="n-m" aria-hidden="true">' + STATE_MARK[nd.st] + '</span><span class="sr">(' + STATE_LABEL[nd.st] + ')</span>' : '') +
+          '</div>';
+      });
+      out += '</div></div>';
+    });
+    return out + '</div>';
+  }
+
+  /* ---------- trace (vue Trace) ---------- */
+  var KIND = { reseau: 'Réseau', serveur: 'Serveur', client: 'Navigateur' };
+  function traceHTML(steps, active, pointer) {
+    var max = 0, total = 0, hasMs = false;
+    steps.forEach(function (st) { if (st.ms !== null) { hasMs = true; total += st.ms; if (st.ms > max) max = st.ms; } });
+    var out = '<ol class="trace">';
+    steps.forEach(function (st, i) {
+      var on = pointer && i === active;
+      out += '<li class="tstep' + (on ? ' on' : '') + '"' + (on ? ' aria-current="step"' : '') + '>' +
+        '<span class="t-n">' + (i + 1) + '</span><div class="t-b"><div class="t-h"><strong>' + esc(st.t) + '</strong>' +
+        (st.kind ? '<span class="t-k k-' + st.kind + '">' + KIND[st.kind] + '</span>' : '') + '</div>' +
+        '<div class="t-d">' + esc(st.d) + '</div>' +
+        (st.ms !== null ? '<div class="t-bar"><span style="width:' + Math.max(2, st.ms / max * 100) + '%"></span><em>' + st.ms + ' ms</em></div>' : '') +
+        '</div></li>';
+    });
+    out += '</ol>';
+    if (hasMs) out += '<p class="t-total">Total simulé : <strong>' + total + ' ms</strong> <span>(ordres de grandeur pédagogiques)</span></p>';
+    return out;
+  }
+
+  /* ---------- écran d’accueil ---------- */
+  function renderHome(notice) {
+    cur = null;
+    var d = doneCount(), todo = nextTodo();
+    var h = '';
+    h += '<section class="hero">';
+    h += '<p class="eyebrow">DIGITAL MINDS 04 · NEXUS</p>';
+    h += '<h1>NEXUS TRACE</h1>';
+    h += '<p class="tagline">Voir ce qui se passe réellement derrière une connexion</p>';
+    h += '<p class="hook">« J’ouvre un site. Trace ce qui se passe. »</p>';
+    h += '<p class="lead">8 scénarios. 8 décisions. Une infrastructure qui évolue avec tes choix.</p>';
+    h += '<div class="hero-pg"><strong>' + d + ' / ' + TOTAL + '</strong> scénarios maîtrisés' + (d ? ' · maîtrise immédiate : ' + firstCount() + ' / ' + d : '') + '</div>';
+    if (notice) h += '<p class="notice" role="status">' + esc(notice) + '</p>';
+    if (allDone()) h += '<p class="free-badge">Mode libre déverrouillé : rejoue n’importe quel scénario.</p>';
+    h += '<button class="btn primary big" id="start">' + (allDone() ? 'Rejouer depuis le début' : d ? 'Reprendre au scénario ' + todo : 'Commencer') + '</button>';
+    h += '</section>';
+    h += '<section class="how"><h2>Comment ça marche</h2><ol class="how-list">' +
+      '<li><b>Situation.</b> Tu vois une infrastructure et un problème.</li>' +
+      '<li><b>Décision.</b> Tu choisis. Aucun risque : une mauvaise réponse explique, puis tu réessaies.</li>' +
+      '<li><b>Pourquoi.</b> Chaque réponse est expliquée, avec ce qui change dans l’architecture.</li></ol>' +
+      '<p class="note">Tout est simulé dans ton navigateur. Aucun compte, aucune donnée envoyée. Ta progression reste sur cet appareil.</p></section>';
+    h += '<section class="list"><h2>Les 8 scénarios</h2><ol class="cards">';
+    SC.forEach(function (s) {
+      var lock = !unlocked(s.id), dn = !!saved.done[s.id];
+      h += '<li><button class="scard' + (dn ? ' done' : '') + (lock ? ' locked' : '') + '" data-open="' + s.id + '"' + (lock ? ' aria-disabled="true"' : '') + '>' +
+        '<span class="s-n">' + s.id + '</span><span class="s-t"><strong>' + esc(s.title) + '</strong><small>Chapitre ' + s.chapter + (lock ? ' · verrouillé' : dn ? ' · maîtrisé' : '') + '</small></span>' +
+        '<span class="s-i">' + (lock ? LOCK : dn ? CHECK : '›') + '</span></button></li>';
+    });
+    h += '</ol></section>';
+    h += resetBlock();
+    app.innerHTML = h;
+    document.title = 'NEXUS TRACE — Voir ce qui se passe réellement derrière une connexion';
+    wireCommon();
+    document.getElementById('start').addEventListener('click', function () { go(allDone() ? 1 : todo); });
+    window.scrollTo(0, 0);
+  }
+
+  function resetBlock() {
+    return '<footer class="foot"><div id="resetZone"><button class="btn ghost" id="resetAsk">Réinitialiser ma progression</button></div>' +
+      '<p class="note">Progression gardée uniquement dans ce navigateur (localStorage). Rien n’est envoyé.</p></footer>';
+  }
+
+  function wireCommon() {
+    Array.prototype.forEach.call(app.querySelectorAll('[data-open]'), function (b) {
+      b.addEventListener('click', function () { go(+b.getAttribute('data-open')); });
+    });
+    var ask = document.getElementById('resetAsk');
+    if (ask) ask.addEventListener('click', function () {
+      var z = document.getElementById('resetZone');
+      z.innerHTML = '<p class="warn-t">Effacer toute ta progression sur cet appareil ?</p><button class="btn danger" id="resetYes">Oui, tout effacer</button> <button class="btn ghost" id="resetNo">Annuler</button>';
+      document.getElementById('resetYes').addEventListener('click', function () { reset(); renderProgress(); if (location.hash) history.replaceState(null, '', location.pathname); renderHome('Progression effacée.'); });
+      document.getElementById('resetNo').addEventListener('click', function () { z.innerHTML = '<button class="btn ghost" id="resetAsk2">Réinitialiser ma progression</button>'; document.getElementById('resetAsk2').addEventListener('click', function () { wireCommonReset(); }); wireCommonReset(); });
+    });
+  }
+  function wireCommonReset() { route(); }
+
+  /* ---------- navigation ---------- */
+  function go(id) {
+    if (location.hash !== '#scenario-' + id) { location.hash = '#scenario-' + id; } else { route(); }
+  }
+  function route() {
+    var m = /^#scenario-(\d+)$/.exec(location.hash);
+    if (!m) { renderHome(); return; }
+    var id = +m[1];
+    if (id < 1 || id > TOTAL) { renderHome(); return; }
+    if (!unlocked(id)) {
+      var t = nextTodo();
+      renderHome('Le scénario ' + id + ' se débloque après la validation du scénario ' + (id - 1) + '. Reprends au scénario ' + t + '.');
+      return;
+    }
+    openScenario(id);
+  }
+
+  /* ---------- écran de scénario ---------- */
+  function openScenario(id) {
+    cur = { id: id, qi: 0, answered: false, result: null, clean: true, tried: [], sel: [], tab: 'arch', step: 0 };
+    renderScenario();
+    window.scrollTo(0, 0);
+  }
+
+  function navChips() {
+    var h = '<nav class="chips" aria-label="Scénarios">';
+    SC.forEach(function (s) {
+      var lock = !unlocked(s.id), on = cur && cur.id === s.id, dn = !!saved.done[s.id];
+      h += '<button class="chip' + (on ? ' on' : '') + (dn ? ' done' : '') + (lock ? ' locked' : '') + '" data-open="' + s.id + '"' + (on ? ' aria-current="true"' : '') + (lock ? ' aria-disabled="true"' : '') +
+        ' aria-label="Scénario ' + s.id + (lock ? ' verrouillé' : dn ? ' maîtrisé' : '') + '">' + (lock ? LOCK : dn && !on ? CHECK : s.id) + '</button>';
+    });
+    return h + '</nav>';
+  }
+
+  function loopStrip() {
+    var active = cur.answered ? 5 : 3;
+    var h = '<ol class="loop" aria-label="Boucle d’apprentissage">';
+    NQ.LOOP.forEach(function (w, i) { h += '<li class="' + (i < active ? 'past' : i === active ? 'now' : '') + '"' + (i === active ? ' aria-current="step"' : '') + '>' + w + '</li>'; });
+    return h + '</ol>';
+  }
+
+  function renderScenario() {
+    var s = byId(cur.id), q = s.questions[cur.qi];
+    var multi = q.kind === 'multi';
+    var h = '';
+    h += '<div class="topbar"><button class="back" id="back">← Parcours</button>' + navChips() + '</div>';
+    h += '<section class="sc-card"><p class="eyebrow">Scénario ' + s.id + ' / ' + TOTAL + ' · chapitre ' + s.chapter + (allDone() ? ' · mode libre' : '') + '</p>' +
+      '<h1 class="sc-title" tabindex="-1" id="scTitle">' + esc(s.title) + '</h1><p class="sc-goal">' + esc(s.goal) + '</p>' + loopStrip() + '</section>';
+
+    var scene = s.scene, trace = s.trace;
+    h += '<section class="viz" aria-label="Visualisation de l’infrastructure"><div class="tabs" role="tablist">' +
+      '<button role="tab" id="tabArch" aria-selected="' + (cur.tab === 'arch') + '" aria-controls="panArch" class="' + (cur.tab === 'arch' ? 'on' : '') + '">ARCHITECTURE</button>' +
+      '<button role="tab" id="tabTrace" aria-selected="' + (cur.tab === 'trace') + '" aria-controls="panTrace" class="' + (cur.tab === 'trace' ? 'on' : '') + '">TRACE</button></div>' +
+      '<div id="panArch" role="tabpanel" aria-labelledby="tabArch"' + (cur.tab === 'arch' ? '' : ' hidden') + '><p class="viz-q">Qui parle à qui ? Quels composants existent ?</p>' + sceneHTML(scene) + '</div>' +
+      '<div id="panTrace" role="tabpanel" aria-labelledby="tabTrace"' + (cur.tab === 'trace' ? '' : ' hidden') + '><p class="viz-q">Le trajet de la requête, étape par étape.</p>' +
+      '<div id="traceBody">' + traceHTML(trace, cur.step, true) + '</div>' +
+      '<div class="stepper"><button class="btn mini" id="prevStep" aria-label="Étape précédente">‹ Précédente</button><span id="stepInfo">Étape ' + (cur.step + 1) + ' / ' + trace.length + '</span><button class="btn mini" id="nextStep" aria-label="Étape suivante">Suivante ›</button></div></div></section>';
+
+    h += '<section class="qzone">';
+    if (s.questions.length > 1) h += '<p class="qcount">Question ' + (cur.qi + 1) + ' sur ' + s.questions.length + '</p>';
+    h += '<div class="block"><span class="lab">SITUATION</span><p class="situation">' + fmt(q.situation) + '</p></div>';
+    h += '<div class="block"><span class="lab">DÉCISION</span><h2 class="ask" id="ask">' + esc(q.ask) + '</h2>' + (multi ? '<p class="hint">Plusieurs réponses possibles.</p>' : '') + '</div>';
+    h += '<div class="choices" role="' + (multi ? 'group' : 'group') + '" aria-labelledby="ask" id="choices">';
+    q.choices.forEach(function (c, i) {
+      var L = String.fromCharCode(65 + i);
+      h += '<button class="choice' + (q.kind === 'action' ? ' action' : '') + '" data-i="' + i + '"' + (multi ? ' role="checkbox" aria-checked="false"' : '') + '><span class="c-l">' + (multi ? '' : L) + '</span><span class="c-t">' + esc(c.t) + '</span></button>';
+    });
+    h += '</div>';
+    if (multi) h += '<button class="btn primary" id="validate" disabled>Valider ma sélection</button>';
+    h += '<div id="result" aria-live="polite"></div>';
+    h += '</section>';
+    h += resetBlock();
+    app.innerHTML = h;
+    document.title = 'Scénario ' + s.id + ' — ' + s.title + ' · NEXUS TRACE';
+    wireCommon();
+    wireScenario(q);
+  }
+
+  function wireScenario(q) {
+    var s = byId(cur.id);
+    document.getElementById('back').addEventListener('click', function () { location.hash = ''; history.replaceState(null, '', location.pathname); route(); });
+    function setTab(t) {
+      cur.tab = t;
+      document.getElementById('tabArch').setAttribute('aria-selected', t === 'arch');
+      document.getElementById('tabTrace').setAttribute('aria-selected', t === 'trace');
+      document.getElementById('tabArch').classList.toggle('on', t === 'arch');
+      document.getElementById('tabTrace').classList.toggle('on', t === 'trace');
+      document.getElementById('panArch').hidden = t !== 'arch';
+      document.getElementById('panTrace').hidden = t !== 'trace';
+    }
+    document.getElementById('tabArch').addEventListener('click', function () { setTab('arch'); });
+    document.getElementById('tabTrace').addEventListener('click', function () { setTab('trace'); });
+    function showStep() {
+      document.getElementById('traceBody').innerHTML = traceHTML(s.trace, cur.step, true);
+      document.getElementById('stepInfo').textContent = 'Étape ' + (cur.step + 1) + ' / ' + s.trace.length;
+    }
+    document.getElementById('prevStep').addEventListener('click', function () { if (cur.step > 0) { cur.step--; showStep(); } });
+    document.getElementById('nextStep').addEventListener('click', function () { if (cur.step < s.trace.length - 1) { cur.step++; showStep(); } });
+
+    var btns = Array.prototype.slice.call(document.querySelectorAll('#choices .choice'));
+    if (q.kind === 'multi') {
+      var validate = document.getElementById('validate');
+      btns.forEach(function (bt) {
+        bt.addEventListener('click', function () {
+          if (cur.answered) return;
+          var on = bt.classList.toggle('sel');
+          bt.setAttribute('aria-checked', on);
+          validate.disabled = !btns.some(function (x) { return x.classList.contains('sel'); });
+        });
+      });
+      validate.addEventListener('click', function () {
+        if (cur.answered) return;
+        var sel = btns.map(function (x) { return x.classList.contains('sel'); });
+        answerMulti(q, sel, btns);
+      });
+    } else {
+      btns.forEach(function (bt) {
+        bt.addEventListener('click', function () { if (!cur.answered) answerSingle(q, +bt.getAttribute('data-i'), btns); });
+      });
+    }
+  }
+
+  /* ---------- réponses ---------- */
+  function verdictOf(ok) { return ok === true ? 'good' : ok === 'part' ? 'part' : 'bad'; }
+  var VERDICT_TXT = { good: 'Bonne logique', part: 'Partiellement juste', bad: 'Pas tout à fait' };
+
+  function answerSingle(q, i, btns) {
+    var c = q.choices[i], v = verdictOf(c.ok);
+    cur.answered = true; cur.result = v;
+    btns.forEach(function (b, k) { b.disabled = true; b.classList.toggle('picked', k === i); });
+    btns[i].classList.add('is-' + v);
+    if (v !== 'good') cur.clean = false;
+    var html = panel(v, '<p>' + fmt(c.why) + '</p>', q, c.change, consequence(c.cons || c.change, c.outcome, v));
+    finishAnswer(q, v, html);
+  }
+
+  function answerMulti(q, sel, btns) {
+    var allOk = q.choices.every(function (c, k) { return !!c.ok === sel[k]; });
+    var v = allOk ? 'good' : 'bad';
+    cur.answered = true; cur.result = v;
+    btns.forEach(function (b, k) {
+      b.disabled = true;
+      var c = q.choices[k], right = !!c.ok === sel[k];
+      b.classList.add(right ? 'is-good' : 'is-bad');
+      var tag = document.createElement('span'); tag.className = 'c-r';
+      tag.textContent = right ? '✓' : '✕'; b.appendChild(tag);
+    });
+    document.getElementById('validate').hidden = true;
+    if (v !== 'good') cur.clean = false;
+    var why = '<ul class="why-list">' + q.choices.map(function (c, k) {
+      var right = !!c.ok === sel[k];
+      var verb = c.ok ? (sel[k] ? 'Bien vu : à mettre en cache / à repérer.' : 'Oublié : il fallait le sélectionner.') : (sel[k] ? 'À ne pas sélectionner.' : 'Bien vu : à laisser de côté.');
+      return '<li class="' + (right ? 'ok' : 'ko') + '"><span aria-hidden="true">' + (right ? '✓' : '✕') + '</span><div><strong>' + esc(c.t) + '</strong><br><span class="v">' + verb + '</span> ' + esc(c.why) + '</div></li>';
+    }).join('') + '</ul>';
+    var change = allOk ? q.okCons : q.badCons;
+    var outcome = allOk ? q.outcomeOk : null;
+    finishAnswer(q, v, panel(v, why, q, change, consequence(change, outcome, v)));
+  }
+
+  function consequence(text, outcome, v) {
+    var h = '<div class="block cons"><span class="lab">CONSÉQUENCE</span>';
+    if (outcome && outcome.scene) h += sceneHTML(outcome.scene, true);
+    if (outcome && outcome.trace) h += traceHTML(outcome.trace, 0, false);
+    return h + '<p class="cons-t">' + fmt(text) + '</p></div>';
+  }
+
+  function panel(v, whyHTML, q, change, consHTML) {
+    var h = '<section class="why ' + v + '" id="why" tabindex="-1" aria-label="Explication">';
+    h += '<h3>POURQUOI ?</h3><p class="verdict v-' + v + '">' + VERDICT_TXT[v] + '</p>';
+    h += '<div class="w-sec"><span class="lab">1 · Explication</span>' + whyHTML + '</div>';
+    h += '<div class="w-sec"><span class="lab">2 · Principe NEXUS</span><p>' + fmt(q.principle) + '</p></div>';
+    h += '<div class="w-sec"><span class="lab">3 · Ce qui change dans l’architecture</span><p>' + fmt(change || 'Rien ne change dans l’architecture.') + '</p></div>';
+    if (q.others) h += '<div class="w-sec"><span class="lab">4 · Et les autres choix ?</span><p>' + fmt(q.others) + '</p></div>';
+    return h + '</section>' + consHTML;
+  }
+
+  function finishAnswer(q, v, html) {
+    var s = byId(cur.id);
+    var last = cur.qi === s.questions.length - 1;
+    var h = html;
+    if (v === 'good') {
+      if (last) {
+        completeScenario();
+        var nxt = cur.id < TOTAL ? cur.id + 1 : null;
+        h += '<div class="done-card" role="status"><strong>Scénario ' + s.id + ' maîtrisé' + (cur.clean ? ' du premier coup' : '') + '.</strong> ' +
+          (nxt ? 'Le scénario ' + nxt + ' est déverrouillé.' : 'Tu as terminé les 8 scénarios : le mode libre est déverrouillé.') + '</div>';
+        h += nxt ? '<button class="btn primary big" id="cont">CONTINUER · scénario ' + nxt + ' →</button>' : '<button class="btn primary big" id="cont">TERMINER LE PARCOURS</button>';
+      } else {
+        h += '<button class="btn primary big" id="cont">CONTINUER →</button>';
+      }
+    } else {
+      h += '<div class="retry-card">Pas de pénalité : ta progression est conservée.</div><button class="btn primary big" id="retry">RÉESSAYER</button>';
+    }
+    var r = document.getElementById('result');
+    r.innerHTML = h;
+    renderProgress();
+    var loop = document.querySelector('.loop');
+    if (loop) { var li = loop.querySelectorAll('li'); for (var k = 0; k < li.length; k++) li[k].className = k < 5 ? 'past' : 'now'; }
+    var w = document.getElementById('why'); if (w) { w.focus({ preventScroll: true }); w.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    var cont = document.getElementById('cont'), retry = document.getElementById('retry');
+    if (cont) cont.addEventListener('click', function () {
+      if (!last) { cur.qi++; cur.answered = false; cur.result = null; cur.step = 0; renderScenario(); window.scrollTo(0, 0); }
+      else if (cur.id < TOTAL) go(cur.id + 1);
+      else { location.hash = ''; history.replaceState(null, '', location.pathname); route(); }
+    });
+    if (retry) retry.addEventListener('click', function () { cur.answered = false; cur.result = null; renderScenario(); document.getElementById('ask').scrollIntoView({ block: 'center' }); });
+  }
+
+  function completeScenario() {
+    var id = cur.id;
+    if (!saved.done[id]) { saved.done[id] = true; saved.first[id] = !!cur.clean; save(); }
+    /* rafraîchit la navigation : le scénario suivant se déverrouille aussitôt */
+    var nav = document.querySelector('.chips');
+    if (nav) {
+      nav.outerHTML = navChips();
+      Array.prototype.forEach.call(document.querySelectorAll('.chips [data-open]'), function (b) {
+        b.addEventListener('click', function () { go(+b.getAttribute('data-open')); });
+      });
+    }
+  }
+
+  /* ---------- démarrage ---------- */
+  load();
+  renderProgress();
+  window.addEventListener('hashchange', route);
+  document.getElementById('brand').addEventListener('click', function (e) { e.preventDefault(); history.replaceState(null, '', location.pathname); route(); });
+  route();
+})();
+
+</script>
+</body>
+</html>
